@@ -16,7 +16,7 @@ type BlockchainIterator struct {
 /*
  * Initially currentHash will be the tip of the blockchain
  */
-func NewBlockchainIterator(bc *Blockchain) *BlockchainIterator {
+func (bc *Blockchain) Iterator() *BlockchainIterator {
 	return &BlockchainIterator{
 		CurrentHash: bc.Tip,
 		Db:          bc.Db,
