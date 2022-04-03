@@ -10,6 +10,9 @@ func main() {
 
 	bc := blockchain.NewBlockchain()
 
+	// close db when main exits
+	defer bc.Db.Close()
+
 	bc.AddBlock("Send 1 GoCoin to Seagin")
 	bc.AddBlock("Send 2 GoCoin to Seagin")
 
