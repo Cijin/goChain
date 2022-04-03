@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+
 	bc := blockchain.NewBlockchain()
 
 	bc.AddBlock("Send 1 GoCoin to Seagin")
@@ -18,4 +19,5 @@ func main() {
 		fmt.Printf("Hash: %x\n", block.Hash)
 		fmt.Println("")
 	}
+
 }

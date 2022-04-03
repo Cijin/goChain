@@ -1,8 +1,6 @@
 package block
 
 import (
-	"bytes"
-	"crypto/sha256"
 	"time"
 )
 
@@ -11,6 +9,7 @@ type Block struct {
 	Data          []byte
 	Hash          []byte
 	PrevBlockHash []byte
+	Nounce        int
 }
 
 func NewBlock(data string, prevBlockHash []byte) *Block {
@@ -25,10 +24,11 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
 }
 
 func (b *Block) SetHash() {
-	concatenatedData := bytes.Join([][]byte{b.Data, b.PrevBlockHash, b.Data}, []byte{})
-	hash := sha256.Sum256(concatenatedData)
+	pow := NewProofOfWork(b)
+	nounce, hash := pow.Mine()
 
 	b.Hash = hash[:]
+	b.Nounce = nounce
 }
 
 func NewGenesisBlock() *Block {
