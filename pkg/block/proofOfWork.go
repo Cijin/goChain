@@ -43,9 +43,8 @@ func NewProofOfWork(b *Block) *ProofOfWork {
 func (pow *ProofOfWork) prepareData(nounce int) []byte {
 	b := pow.block
 	data := bytes.Join([][]byte{
-		b.Data,
+		b.HashTransactions(),
 		b.PrevBlockHash,
-		b.Data,
 		utils.ConvertToHex(b.Timestamp),
 		utils.ConvertToHex(int64(nounce)),
 	}, []byte{})
@@ -54,30 +53,18 @@ func (pow *ProofOfWork) prepareData(nounce int) []byte {
 }
 
 /*
- * Mine
+ * MineBlock
  * What is mining?
  * It's the process of finding a hash that meets certain criteria, in this
  * case the criteria is that the hash should be smaller than target.
  *
- * Initialize nounce
- * While nounce in bound of maxNounce: keep running till hash found
- *
- * Get hash from preparedData()
- *
- * Convert hash to Int
- *  - Hash is of type []byte
- *  - Use Binary.BigEndian
- *
- * Use Int.Cmp, should be -1 for successfull mine
- *  - if Cmp returns -1, you are done return hash and nounce
- *  - otherwise increment nounce and keep running
  */
-func (pow *ProofOfWork) Mine() (int, []byte) {
+func (pow *ProofOfWork) Run() (int, []byte) {
 	var hash [32]byte
 	var hashInt big.Int
 	var nounce int
 
-	fmt.Printf("Mining block containing:\"%s\"\n", pow.block.Data)
+	fmt.Println("Mining: ")
 	for nounce < maxNounce {
 		data := pow.prepareData(nounce)
 		hash = sha256.Sum256(data)
@@ -91,7 +78,6 @@ func (pow *ProofOfWork) Mine() (int, []byte) {
 
 		nounce++
 	}
-	fmt.Println()
 
 	return nounce, hash[:]
 }

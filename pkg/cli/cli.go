@@ -9,15 +9,12 @@ import (
 	"github.com/Cijin/gochain/pkg/blockchain"
 )
 
-// CLI responsible for processing command line arguments
-type CLI struct {
-	Bc *blockchain.Blockchain
-}
+type CLI struct{}
 
 func (cli *CLI) printUsage() {
 	fmt.Println("Usage:")
-	fmt.Println("  addblock -data <BLOCK_DATA> - add a block to the blockchain")
 	fmt.Println("  printchain - print all the blocks of the blockchain")
+	fmt.Println("  create -address <WALLET_ADDRESS> - create a new blockchain")
 }
 
 func (cli *CLI) validateArgs() {
@@ -27,19 +24,20 @@ func (cli *CLI) validateArgs() {
 	}
 }
 
-func (cli *CLI) addBlock(data string) {
-	cli.Bc.AddBlock(data)
-	fmt.Println("Success!")
+func (cli *CLI) createBlockchain(address string) {
+	bc := blockchain.CreateBlockchain(address)
+	bc.Db.Close()
+	fmt.Println("Blockchain created!")
 }
 
 func (cli *CLI) printChain() {
-	bci := cli.Bc.Iterator()
+	bc := blockchain.NewBlockchain()
+	bci := bc.Iterator()
 
 	for {
 		prevBlock := bci.Previous()
 
 		fmt.Printf("Prev. hash: %x\n", prevBlock.PrevBlockHash)
-		fmt.Printf("Data: %s\n", prevBlock.Data)
 		fmt.Printf("Hash: %x\n", prevBlock.Hash)
 		fmt.Println()
 
@@ -53,14 +51,14 @@ func (cli *CLI) printChain() {
 func (cli *CLI) Run() {
 	cli.validateArgs()
 
-	addBlockCmd := flag.NewFlagSet("addblock", flag.ExitOnError)
+	createChainCmd := flag.NewFlagSet("create", flag.ExitOnError)
 	printChainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
 
-	addBlockData := addBlockCmd.String("data", "", "Block data")
+	createBlockchainAddress := createChainCmd.String("address", "", "The address to send genesis block reward to")
 
 	switch os.Args[1] {
-	case "addblock":
-		err := addBlockCmd.Parse(os.Args[2:])
+	case "create":
+		err := createChainCmd.Parse(os.Args[2:])
 		if err != nil {
 			log.Panic(err)
 		}
@@ -74,12 +72,12 @@ func (cli *CLI) Run() {
 		os.Exit(1)
 	}
 
-	if addBlockCmd.Parsed() {
-		if *addBlockData == "" {
-			addBlockCmd.Usage()
+	if createChainCmd.Parsed() {
+		if *createBlockchainAddress == "" {
+			createChainCmd.Usage()
 			os.Exit(1)
 		}
-		cli.addBlock(*addBlockData)
+		cli.createBlockchain(*createBlockchainAddress)
 	}
 
 	if printChainCmd.Parsed() {
