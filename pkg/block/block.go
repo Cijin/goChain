@@ -1,20 +1,24 @@
 package block
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"time"
+
+	transaction "github.com/Cijin/gochain/pkg/transaction"
 )
 
 type Block struct {
 	Timestamp     int64
-	Data          []byte
+	Transactions  []*transaction.Transaction
 	Hash          []byte
 	PrevBlockHash []byte
 	Nounce        int
 }
 
-func NewBlock(data string, prevBlockHash []byte) *Block {
+func NewBlock(tx []*transaction.Transaction, prevBlockHash []byte) *Block {
 	b := Block{
-		Data:          []byte(data),
+		Transactions:  tx,
 		Timestamp:     time.Now().Unix(),
 		PrevBlockHash: prevBlockHash,
 	}
@@ -25,12 +29,24 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
 
 func (b *Block) SetHash() {
 	pow := NewProofOfWork(b)
-	nounce, hash := pow.Mine()
+	nounce, hash := pow.Run()
 
 	b.Hash = hash[:]
 	b.Nounce = nounce
 }
 
-func NewGenesisBlock() *Block {
-	return NewBlock("Genesis Block", nil)
+func (b *Block) HashTransactions() []byte {
+	var txIds [][]byte
+	var hash [32]byte
+
+	for _, tx := range b.Transactions {
+		txIds = append(txIds, tx.Id)
+	}
+
+	hash = sha256.Sum256(bytes.Join(txIds, []byte{}))
+	return hash[:]
+}
+
+func NewGenesisBlock(coinbase *transaction.Transaction) *Block {
+	return NewBlock([]*transaction.Transaction{coinbase}, []byte{})
 }

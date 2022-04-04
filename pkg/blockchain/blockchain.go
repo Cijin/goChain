@@ -2,28 +2,32 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/Cijin/gochain/pkg/block"
+	"github.com/Cijin/gochain/pkg/transaction"
 	"github.com/boltdb/bolt"
 )
 
 const BlocksBucket = "blocksBucket"
 const blockchainDb = "blockchainDb"
 const LeafKey = "l"
+const genesisCoinbaseData = "It's fucking 2100, I need to sleep :D"
 
 type Blockchain struct {
 	Tip []byte
 	Db  *bolt.DB
 }
 
-func (bc *Blockchain) AddBlock(data string) {
+func (bc *Blockchain) MineBlock(tx []*transaction.Transaction) {
 	/*
 	 * get the tip of blockchain
 	 * mine new block
 	 * update tip ("l") and add new block to blockchain
 	 */
-	newBlock := block.NewBlock(data, bc.Tip)
+	newBlock := block.NewBlock(tx, bc.Tip)
 
 	err := bc.Db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BlocksBucket))
@@ -52,9 +56,54 @@ func (bc *Blockchain) AddBlock(data string) {
 	}
 }
 
+func isBlockchainDbPresent() bool {
+	_, err := os.Stat(blockchainDb)
+
+	return !os.IsNotExist(err)
+}
+
 func NewBlockchain() *Blockchain {
-	var tip []byte
 	var bl block.Block
+	var tip []byte
+
+	if !isBlockchainDbPresent() {
+		fmt.Println("Blockchain does not exist, create one first")
+		os.Exit(1)
+	}
+
+	db, err := bolt.Open(blockchainDb, 0600, nil)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	err = db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(BlocksBucket))
+
+		buf := b.Get([]byte(LeafKey))
+		err = json.Unmarshal(buf, &bl)
+		if err != nil {
+			return err
+		}
+
+		tip = bl.Hash
+		return nil
+	})
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	bc := Blockchain{tip, db}
+	return &bc
+}
+
+func CreateBlockchain(address string) *Blockchain {
+	var tip []byte
+
+	if isBlockchainDbPresent() {
+		fmt.Println("Blockchain already exists")
+		os.Exit(1)
+	}
 
 	db, err := bolt.Open(blockchainDb, 0600, nil)
 	if err != nil {
@@ -66,8 +115,10 @@ func NewBlockchain() *Blockchain {
 
 		// Check if blockchain present in database
 		if b == nil {
+			cbtx := transaction.NewCoinbaseTX(address, genesisCoinbaseData)
+			block := block.NewGenesisBlock(cbtx)
+
 			// marshal JSON and write to bucket
-			block := block.NewGenesisBlock()
 			buf, err := json.Marshal(block)
 			if err != nil {
 				return err
@@ -88,14 +139,6 @@ func NewBlockchain() *Blockchain {
 			return b.Put(block.Hash, buf)
 		}
 
-		// blockchain present
-		buf := b.Get([]byte(LeafKey))
-		err = json.Unmarshal(buf, &bl)
-		if err != nil {
-			log.Panic(err)
-		}
-
-		tip = bl.Hash
 		return nil
 	})
 
