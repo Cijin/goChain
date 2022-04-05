@@ -62,6 +62,9 @@ func isBlockchainDbPresent() bool {
 	return !os.IsNotExist(err)
 }
 
+/*
+* @TODO: check if address required as a param
+ */
 func NewBlockchain() *Blockchain {
 	var bl block.Block
 	var tip []byte

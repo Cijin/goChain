@@ -47,6 +47,20 @@ func (cli *CLI) printChain() {
 	}
 }
 
+func (cli *CLI) getBalance(address string) {
+	bc := blockchain.NewBlockchain()
+	defer bc.Db.Close()
+
+	var balance int
+	unspentTxOutputs := bc.FindUnspentTransactionOutputs(address)
+
+	for _, out := range unspentTxOutputs {
+		balance += out.Value
+	}
+
+	fmt.Printf("Balance of '%s': %d\n", address, balance)
+}
+
 // Run parses command line arguments and processes commands
 func (cli *CLI) Run() {
 	cli.validateArgs()
