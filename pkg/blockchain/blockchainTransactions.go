@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/hex"
+	"log"
 
 	"github.com/Cijin/gochain/pkg/transaction"
 )
@@ -92,4 +93,72 @@ func (bc *Blockchain) FindUnspentTransactionOutputs(address string) []transactio
 	}
 
 	return unspentTxOutputs
+}
+
+/*
+ * amount required for the current transaction
+ * @returns spendable outputs, accumulatedAmount
+ */
+func (bc *Blockchain) FindSpendableTxOutputs(address string, amount int) (map[string][]int, int) {
+	var spendableOutputs = make(map[string][]int)
+	accumulatedAmount := 0
+	unspentOutputs := bc.FindUnspentTransactionOutputs(address)
+
+	for outIdx, output := range unspentOutputs {
+		txId := hex.EncodeToString(output.txId)
+
+		spendableOutputs[txId] = append(spendableOutputs[txId], outIdx)
+		accumulatedAmount += output.Value
+
+		if accumulatedAmount >= amount {
+			break
+		}
+	}
+
+	return spendableOutputs, accumulatedAmount
+}
+
+/*
+ * Generate Inputs, Output (change if neccessary)
+ *  Inputs:
+ *		* Get "spendable" outputs
+ *		* Generate inputs using TxId
+ *		* For now outputs are just indexes
+ *		* ScriptSig -> from
+ */
+func NewUnspentTxOutputs(from, to string, amount int, bc *Blockchain) *transaction.Transaction {
+	var inputs []transaction.TXInput
+	var outputs []transaction.TXOutput
+
+	spendableOutputs, balance := bc.FindSpendableTxOutputs(from, amount)
+
+	if balance < amount {
+		log.Panic("Error: Insufficent balance")
+	}
+
+	// inputs
+	for txid, output := range spendableOutputs {
+		txId, err := hex.DecodeString(txid)
+
+		if err != nil {
+			log.Panic(err)
+		}
+
+		for _, out := range output {
+			inputs = append(inputs, transaction.TXInput{txId, out, from})
+		}
+	}
+
+	// outputs
+	outputs = append(outputs, transaction.TXOutput{amount, to})
+
+	// generate change
+	if amount < balance {
+		outputs = append(outputs, transaction.TXOutput{(balance - amount), from})
+	}
+
+	tr := transaction.Transaction{nil, inputs, outputs}
+	tr.SetId()
+
+	return &tr
 }
