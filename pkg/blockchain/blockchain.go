@@ -14,7 +14,7 @@ import (
 const BlocksBucket = "blocksBucket"
 const blockchainDb = "blockchainDb"
 const LeafKey = "l"
-const genesisCoinbaseData = "It's fucking 2100, I need to sleep :D"
+const genesisCoinbaseData = "Squeeze every last drop of life out of your life"
 
 type Blockchain struct {
 	Tip []byte
