@@ -53,12 +53,12 @@ func (pow *ProofOfWork) prepareData(nounce int) []byte {
 }
 
 /*
- * MineBlock
+* Run: Mining new Blocks.
  * What is mining?
  * It's the process of finding a hash that meets certain criteria, in this
  * case the criteria is that the hash should be smaller than target.
  *
- */
+*/
 func (pow *ProofOfWork) Run() (int, []byte) {
 	var hash [32]byte
 	var hashInt big.Int
