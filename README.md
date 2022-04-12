@@ -1,5 +1,5 @@
 # gochain
-A simple blockchain implementation in Go
+A simple blockchain implementation in Go. Inspired and guided by [Jeiwan's Blog](https://jeiwan.net/)
 
 
 ### Block
