@@ -22,15 +22,33 @@ type Blockchain struct {
 }
 
 func (bc *Blockchain) MineBlock(tx []*transaction.Transaction) {
+	var leafBl block.Block
 	/*
 	 * get the tip of blockchain
 	 * mine new block
 	 * update tip ("l") and add new block to blockchain
 	 */
-	newBlock := block.NewBlock(tx, bc.Tip)
+	err := bc.Db.View(func(boltTx *bolt.Tx) error {
+		b := boltTx.Bucket([]byte(BlocksBucket))
+		buf := b.Get([]byte(LeafKey))
 
-	err := bc.Db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(BlocksBucket))
+		err := json.Unmarshal(buf, &leafBl)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	newBlock := block.NewBlock(tx, leafBl.Hash)
+
+	err = bc.Db.Update(func(boltTx *bolt.Tx) error {
+		b := boltTx.Bucket([]byte(BlocksBucket))
+
 		buf, err := json.Marshal(newBlock)
 		if err != nil {
 			return err
@@ -41,7 +59,7 @@ func (bc *Blockchain) MineBlock(tx []*transaction.Transaction) {
 			return err
 		}
 
-		err = b.Put([]byte(LeafKey), newBlock.Hash)
+		err = b.Put([]byte(LeafKey), buf)
 		if err != nil {
 			return err
 		}
@@ -81,8 +99,8 @@ func NewBlockchain() *Blockchain {
 
 	err = db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BlocksBucket))
-
 		buf := b.Get([]byte(LeafKey))
+
 		err = json.Unmarshal(buf, &bl)
 		if err != nil {
 			return err
@@ -119,10 +137,10 @@ func CreateBlockchain(address string) *Blockchain {
 		// Check if blockchain present in database
 		if b == nil {
 			cbtx := transaction.NewCoinbaseTX(address, genesisCoinbaseData)
-			block := block.NewGenesisBlock(cbtx)
+			bl := block.NewGenesisBlock(cbtx)
 
 			// marshal JSON and write to bucket
-			buf, err := json.Marshal(block)
+			buf, err := json.Marshal(bl)
 			if err != nil {
 				return err
 			}
@@ -138,8 +156,8 @@ func CreateBlockchain(address string) *Blockchain {
 				return err
 			}
 
-			tip = block.Hash
-			return b.Put(block.Hash, buf)
+			tip = bl.Hash
+			return b.Put(bl.Hash, buf)
 		}
 
 		return nil

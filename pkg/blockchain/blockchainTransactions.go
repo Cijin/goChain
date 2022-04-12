@@ -102,16 +102,19 @@ func (bc *Blockchain) FindUnspentTransactionOutputs(address string) []transactio
 func (bc *Blockchain) FindSpendableTxOutputs(address string, amount int) (map[string][]int, int) {
 	var spendableOutputs = make(map[string][]int)
 	accumulatedAmount := 0
-	unspentOutputs := bc.FindUnspentTransactionOutputs(address)
+	unspentTxs := bc.FindUnspentTransactions(address)
 
-	for outIdx, output := range unspentOutputs {
-		txId := hex.EncodeToString(output.txId)
+	for _, tx := range unspentTxs {
+		txId := hex.EncodeToString(tx.Id)
 
-		spendableOutputs[txId] = append(spendableOutputs[txId], outIdx)
-		accumulatedAmount += output.Value
+		for outIdx, output := range tx.Vout {
 
-		if accumulatedAmount >= amount {
-			break
+			accumulatedAmount += output.Value
+			spendableOutputs[txId] = append(spendableOutputs[txId], outIdx)
+
+			if accumulatedAmount >= amount {
+				break
+			}
 		}
 	}
 
@@ -126,7 +129,7 @@ func (bc *Blockchain) FindSpendableTxOutputs(address string, amount int) (map[st
  *		* For now outputs are just indexes
  *		* ScriptSig -> from
  */
-func NewUnspentTxOutputs(from, to string, amount int, bc *Blockchain) *transaction.Transaction {
+func NewUnspentTxs(from, to string, amount int, bc *Blockchain) *transaction.Transaction {
 	var inputs []transaction.TXInput
 	var outputs []transaction.TXOutput
 
@@ -145,19 +148,32 @@ func NewUnspentTxOutputs(from, to string, amount int, bc *Blockchain) *transacti
 		}
 
 		for _, out := range output {
-			inputs = append(inputs, transaction.TXInput{txId, out, from})
+			inputs = append(inputs, transaction.TXInput{
+				TxId:      txId,
+				Vout:      out,
+				ScriptSig: from,
+			})
 		}
 	}
 
 	// outputs
-	outputs = append(outputs, transaction.TXOutput{amount, to})
+	outputs = append(outputs, transaction.TXOutput{
+		Value: amount, ScriptPubKey: to,
+	})
 
 	// generate change
 	if amount < balance {
-		outputs = append(outputs, transaction.TXOutput{(balance - amount), from})
+		outputs = append(outputs, transaction.TXOutput{
+			Value:        balance - amount,
+			ScriptPubKey: from,
+		})
 	}
 
-	tr := transaction.Transaction{nil, inputs, outputs}
+	tr := transaction.Transaction{
+		Id:   nil,
+		Vin:  inputs,
+		Vout: outputs,
+	}
 	tr.SetId()
 
 	return &tr
