@@ -78,6 +78,7 @@ func (pow *ProofOfWork) Run() (int, []byte) {
 
 		nounce++
 	}
+	fmt.Println()
 
 	return nounce, hash[:]
 }

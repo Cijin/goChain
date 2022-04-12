@@ -28,16 +28,18 @@ func (bc *Blockchain) Iterator() *BlockchainIterator {
  */
 func (bcI *BlockchainIterator) Previous() *block.Block {
 	var block block.Block
+
 	err := bcI.Db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BlocksBucket))
 
 		buf := b.Get(bcI.CurrentHash)
+
 		err := json.Unmarshal(buf, &block)
 		if err != nil {
 			return err
 		}
 
-		bcI.CurrentHash = block.Hash
+		bcI.CurrentHash = block.PrevBlockHash
 		return nil
 	})
 
