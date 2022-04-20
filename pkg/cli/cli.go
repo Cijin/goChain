@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-
-	"github.com/Cijin/gochain/pkg/blockchain"
-	"github.com/Cijin/gochain/pkg/transaction"
 )
 
 type CLI struct{}
@@ -25,52 +22,6 @@ func (cli *CLI) validateArgs() {
 		cli.printUsage()
 		os.Exit(1)
 	}
-}
-
-func (cli *CLI) createBlockchain(address string) {
-	bc := blockchain.CreateBlockchain(address)
-	bc.Db.Close()
-	fmt.Println("Blockchain created!")
-}
-
-func (cli *CLI) printChain() {
-	bc := blockchain.NewBlockchain()
-	bci := bc.Iterator()
-
-	for {
-		prevBlock := bci.Previous()
-
-		fmt.Printf("Previous hash: %x\n", prevBlock.PrevBlockHash)
-		fmt.Printf("Hash: %x\n", prevBlock.Hash)
-		fmt.Println()
-
-		if len(prevBlock.PrevBlockHash) == 0 {
-			break
-		}
-	}
-}
-
-func (cli *CLI) getBalance(address string) {
-	bc := blockchain.NewBlockchain()
-	defer bc.Db.Close()
-
-	var balance int
-	unspentTxOutputs := bc.FindUnspentTransactionOutputs(address)
-
-	for _, out := range unspentTxOutputs {
-		balance += out.Value
-	}
-
-	fmt.Printf("Balance of '%s': %d\n", address, balance)
-}
-
-func (cli *CLI) send(from, to string, amount int) {
-	bc := blockchain.NewBlockchain()
-	defer bc.Db.Close()
-
-	tx := blockchain.NewUnspentTxs(from, to, amount, bc)
-	bc.MineBlock([]*transaction.Transaction{tx})
-	fmt.Println("Success!")
 }
 
 // Run parses command line arguments and processes commands
