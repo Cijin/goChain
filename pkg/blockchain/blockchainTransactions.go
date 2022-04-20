@@ -12,7 +12,7 @@ import (
  *	Within the block parse through each transaction
  *   If tx is not coinbase tx
  *   Parse through TXInput's:
- *    - If input has same address as the func param
+ *    - If input has same pubKeyHash as the func param
  *				* Append to array in map with current txId as key
  *				* This will be used to check if output is unspent later
  *
@@ -23,7 +23,7 @@ import (
  *				 * If yes continue to next output
  *
  *
- *  If the output can now be unlocked with address, append to
+ *  If the output can now be unlocked with pubKeyHash, append to
  *  unspent tx's
  *
  *  If all blocks have been traversed, break
@@ -31,7 +31,7 @@ import (
  *  Return any unspent transactions
  *
  */
-func (bc *Blockchain) FindUnspentTransactions(address string) []transaction.Transaction {
+func (bc *Blockchain) FindUnspentTransactions(pubKeyHash []byte) []transaction.Transaction {
 	var unspentTxs []transaction.Transaction
 	spentTXs := make(map[string][]int)
 	bcI := bc.Iterator()
@@ -45,7 +45,7 @@ func (bc *Blockchain) FindUnspentTransactions(address string) []transaction.Tran
 			// look for spent tx's
 			if !tx.IsCoinbaseTx() {
 				for _, in := range tx.Vin {
-					if in.CanUnlockOutputWith(address) {
+					if in.UsesKey(pubKeyHash) {
 						txId := hex.EncodeToString(in.TxId)
 						spentTXs[txId] = append(spentTXs[txId], in.Vout)
 					}
@@ -61,7 +61,7 @@ func (bc *Blockchain) FindUnspentTransactions(address string) []transaction.Tran
 					}
 				}
 
-				if out.CanBeUnlockedWith(address) {
+				if out.IsLockedWithKey(pubKeyHash) {
 					// found unspent tx
 					unspentTxs = append(unspentTxs, *tx)
 				}
@@ -80,13 +80,13 @@ func (bc *Blockchain) FindUnspentTransactions(address string) []transaction.Tran
  * Find unspent transaction outputs utilizes the above function to return only
  * outputs, which will make finding balances easier
  */
-func (bc *Blockchain) FindUnspentTransactionOutputs(address string) []transaction.TXOutput {
+func (bc *Blockchain) FindUnspentTransactionOutputs(pubKeyHash []byte) []transaction.TXOutput {
 	var unspentTxOutputs []transaction.TXOutput
-	unspentTxs := bc.FindUnspentTransactions(address)
+	unspentTxs := bc.FindUnspentTransactions(pubKeyHash)
 
 	for _, tx := range unspentTxs {
 		for _, out := range tx.Vout {
-			if out.CanBeUnlockedWith(address) {
+			if out.IsLockedWithKey(pubKeyHash) {
 				unspentTxOutputs = append(unspentTxOutputs, out)
 			}
 		}
@@ -99,10 +99,10 @@ func (bc *Blockchain) FindUnspentTransactionOutputs(address string) []transactio
  * amount required for the current transaction
  * @returns spendable outputs, accumulatedAmount
  */
-func (bc *Blockchain) FindSpendableTxOutputs(address string, amount int) (map[string][]int, int) {
+func (bc *Blockchain) FindSpendableTxOutputs(pubKeyHash []byte, amount int) (map[string][]int, int) {
 	var spendableOutputs = make(map[string][]int)
 	accumulatedAmount := 0
-	unspentTxs := bc.FindUnspentTransactions(address)
+	unspentTxs := bc.FindUnspentTransactions(pubKeyHash)
 
 	for _, tx := range unspentTxs {
 		txId := hex.EncodeToString(tx.Id)

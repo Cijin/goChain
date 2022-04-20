@@ -7,7 +7,7 @@ import (
 	"crypto/sha256"
 	"log"
 
-	"github.com/Cijin/gochain/pkg/base58"
+	"github.com/Cijin/gochain/pkg/utils"
 	"golang.org/x/crypto/ripemd160"
 )
 
@@ -42,7 +42,7 @@ func (w Wallet) GetAddress() []byte {
 	checksum := checksum(versionedPayload)
 
 	fullPayload := append(versionedPayload, checksum...)
-	address := base58.Base58Encode(fullPayload)
+	address := utils.Base58Encode(fullPayload)
 
 	return address
 }
