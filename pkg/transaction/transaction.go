@@ -31,10 +31,9 @@ func NewCoinbaseTX(to, data string) *Transaction {
 		data = fmt.Sprintf("Sending Reward to '%s'", to)
 	}
 
-	txin := TXInput{[]byte{}, -1, data}
-	txout := TXOutput{subsidy, to}
-	tx := Transaction{nil, []TXInput{txin}, []TXOutput{txout}}
-
+	txin := TXInput{[]byte{}, -1, nil, []byte(data)}
+	txout := NewTXOutput(subsidy, to)
+	tx := Transaction{nil, []TXInput{txin}, []TXOutput{*txout}}
 	tx.SetId()
 
 	return &tx

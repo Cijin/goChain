@@ -11,6 +11,7 @@ type TXOutput struct {
 	PubKeyHash []byte
 }
 
+// Sign newly created output
 func (out *TXOutput) Lock(address []byte) {
 	pubKeyHash := utils.Base58Decode(address)
 	pubKeyHash = pubKeyHash[1 : len(pubKeyHash)-ChecksumLen]
@@ -19,4 +20,11 @@ func (out *TXOutput) Lock(address []byte) {
 
 func (out *TXOutput) IsLockedWithKey(pubKeyHash []byte) bool {
 	return bytes.Compare(out.PubKeyHash, pubKeyHash) == 0
+}
+
+func NewTXOutput(value int, address string) *TXOutput {
+	txO := &TXOutput{value, nil}
+	txO.Lock([]byte(address))
+
+	return txO
 }
