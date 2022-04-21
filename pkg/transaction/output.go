@@ -13,8 +13,7 @@ type TXOutput struct {
 
 func (out *TXOutput) Lock(address []byte) {
 	pubKeyHash := utils.Base58Decode(address)
-	// the hash is shortened version of the pubkey
-	pubKeyHash = pubKeyHash[1 : len(pubKeyHash)-4]
+	pubKeyHash = pubKeyHash[1 : len(pubKeyHash)-checksumLen]
 	out.PubKeyHash = pubKeyHash
 }
 
