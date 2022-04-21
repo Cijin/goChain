@@ -13,7 +13,7 @@ import (
 )
 
 const version = byte(0x00)
-const checksumLen = 4
+const ChecksumLen = 4
 
 type Wallet struct {
 	PrivateKey ecdsa.PrivateKey
@@ -76,12 +76,12 @@ func HashPubKey(pubKey []byte) []byte {
  */
 func ValidateAddress(address string) bool {
 	pubKeyHash := utils.Base58Decode([]byte(address))
-	pubKeyHashLength := len(pubKeyHash) - checksumLen
+	pubKeyHashLength := len(pubKeyHash) - ChecksumLen
 	actualChecksum := pubKeyHash[pubKeyHashLength:]
 
 	// generating target checksum
 	version := pubKeyHash[0]
-	pubKeyHash := pubKeyHash[1:pubKeyHashLength]
+	pubKeyHash = pubKeyHash[1:pubKeyHashLength]
 	targetChecksum := checksum(append([]byte{version}, pubKeyHash...))
 
 	return bytes.Compare(actualChecksum, targetChecksum) == 0
@@ -95,7 +95,7 @@ func checksum(payload []byte) []byte {
 	firstSHA := sha256.Sum256(payload)
 	secondSHA := sha256.Sum256(firstSHA[:])
 
-	return secondSHA[:checksumLen]
+	return secondSHA[:ChecksumLen]
 }
 
 func generateKey() (ecdsa.PrivateKey, []byte) {
