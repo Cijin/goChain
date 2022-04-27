@@ -1,7 +1,9 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -80,9 +82,6 @@ func isBlockchainDbPresent() bool {
 	return !os.IsNotExist(err)
 }
 
-/*
-* @TODO: check if address required as a param
- */
 func NewBlockchain() *Blockchain {
 	var bl block.Block
 	var tip []byte
@@ -168,4 +167,27 @@ func CreateBlockchain(address string) *Blockchain {
 	}
 
 	return &Blockchain{tip, db}
+}
+
+func (bc *Blockchain) FindTransaction(id []byte) (transaction.Transaction, error) {
+	// traverse through transaction, using bcI
+	// check if txId is the same as Id
+	// log Error if transaction not found
+	bcI := bc.Iterator()
+
+	for {
+		block := bcI.Previous()
+
+		for _, tx := range block.Transactions {
+			if bytes.Compare(tx.Id, id) == 0 {
+				return *tx, nil
+			}
+		}
+
+		if len(block.PrevBlockHash) == 0 {
+			break
+		}
+	}
+
+	return transaction.Transaction{}, errors.New("Transaction not found")
 }
